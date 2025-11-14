@@ -20,7 +20,7 @@ package:zip:
   before_script:
     - apt-get update && apt-get install -y zip && rm -rf /var/lib/apt/lists/*
   script:
-    - zip -rq9 "${ZIP_NAME}" API/ DepdendencyInjection/ Resources/ Service/ composer.json ExternalIssuesBundle.php
+    - zip -rq9 "${ZIP_NAME}" API/ DependencyInjection/ Resources/ Service/ composer.json ExternalIssuesBundle.php
     - |
       curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
            --upload-file "${ZIP_NAME}" \
