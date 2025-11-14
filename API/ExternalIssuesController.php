@@ -25,7 +25,7 @@ final class ExternalIssuesController extends AbstractController
     #[Route(path: "/issues", name: "external_issues", methods: ['GET'])]
     public function fetchIssues(Request $request): JsonResponse
     {
-        $queryString = $request->query->get('search');
+        $queryString = $request->query->get('search') ?? '';
 
         $queryUrl = $this->apiClient->getUrlBuilder()->buildQueryUrl($queryString);
 

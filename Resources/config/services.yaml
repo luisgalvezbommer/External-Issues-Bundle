@@ -14,6 +14,7 @@ services:
       $httpClient: "@http_client"
       $accessToken: "%env(EXTERNAL_ISSUES_ACCESS_TOKEN)%"
       $requestHeadersTemplate: "%env(json:EXTERNAL_ISSUES_REQUEST_HEADERS_TEMPLATE)%"
+      $responseWrapperKey: "%env(default::EXTERNAL_ISSUES_RESPONSE_WRAPPER_KEY)%"
 
   KimaiPlugin\ExternalIssuesBundle\Service\UrlBuilder:
     arguments:
