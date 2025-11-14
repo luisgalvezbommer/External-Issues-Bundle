@@ -30,6 +30,8 @@ Additionally, some caching is performed between the frontend and the plugin.
 
 ## Integrating the plugin and the `.env` file into Kimai
 
+Remove the version part -v1.0.0 .zip from ExternalIssuesBundle-v1.0.0
+
 Unzip the content of ExternalIssuesBundle.zip into the `var/plugins` folder of your Kimai installation.
 
 ### Recommended in compose yaml

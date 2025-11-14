@@ -10,7 +10,7 @@ php:lint:
   stage: lint
   image: php:8.2-cli
   script:
-    - find plugins/ExternalIssuesBundle -type f -name "*.php" -print0 | xargs -0 -n1 -P4 php -l
+    - find . -type f -name "*.php" -print0 | xargs -0 -n1 -P4 php -l
 
 package:zip:
   stage: package
@@ -20,9 +20,7 @@ package:zip:
   before_script:
     - apt-get update && apt-get install -y zip && rm -rf /var/lib/apt/lists/*
   script:
-    - cd plugins
-    - zip -rq9 "../${ZIP_NAME}" ExternalIssuesBundle
-    - cd ..
+    - zip -rq9 "${ZIP_NAME}" API/ DepdendencyInjection/ Resources/ Service/ composer.json ExternalIssuesBundle.php
     - |
       curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
            --upload-file "${ZIP_NAME}" \
