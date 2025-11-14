@@ -1,0 +1,4 @@
+external-issues.api:
+  resource: "@ExternalIssuesBundle/API/"
+  type: attribute
+  prefix: /api

@@ -1,0 +1,25 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+    bind:
+
+  KimaiPlugin\ExternalIssuesBundle\:
+    resource: "../../*"
+    exclude: "../../{Resources}"
+
+  KimaiPlugin\ExternalIssuesBundle\Service\ExternalApiClient:
+    arguments:
+      $httpClient: "@http_client"
+      $accessToken: "%env(EXTERNAL_ISSUES_ACCESS_TOKEN)%"
+      $requestHeadersTemplate: "%env(json:EXTERNAL_ISSUES_REQUEST_HEADERS_TEMPLATE)%"
+
+  KimaiPlugin\ExternalIssuesBundle\Service\UrlBuilder:
+    arguments:
+      $baseUrl: "%env(EXTERNAL_ISSUES_BASE_URL)%"
+      $queryUrlTemplate: "%env(EXTERNAL_ISSUES_QUERY_URL_TEMPLATE)%"
+      $resultKey: "%env(EXTERNAL_ISSUES_RESULT_KEY)%"
+      $resultValue: "%env(EXTERNAL_ISSUES_RESULT_VALUE)%"
+      $issueIdentifier: "%env(EXTERNAL_ISSUE_IDENTIFIER)%"
+      $issueUrlTemplate: "%env(EXTERNAL_ISSUE_URL_TEMPLATE)%"

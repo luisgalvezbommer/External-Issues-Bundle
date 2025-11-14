@@ -1,0 +1,20 @@
+{
+    "name": "luisgalvezbommer/external-issues-bundle",
+    "description": "A Kimai plugin, which fetches data from an external issue tracking system and provides them at the endpoint /api/description/issues?search=abc. This issuedata can be used to auto-complete the description field when creating a new timesheet entry.",
+    "homepage": "https://www.uhurutec.com/",
+    "type": "kimai-plugin",
+    "version": "1.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Luis Antonio Gálvez Bommer",
+            "email": "lgbo@uhurutec.com"
+        }
+    ],
+    "extra": {
+        "kimai": {
+            "require": 20000,
+            "name": "External issues endpoint"
+        }
+    }
+}
