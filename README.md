@@ -98,7 +98,7 @@ Here KIMAI_USERNAME is a special placeholder that will be replaced with the curr
 And queryString is the string that the user types in the description field.
 
 
-For more examples, see .env.examples file [.env.examples](./.env.examples)
+For more examples, see [.env.youtrack](./.env.youtrack), [.env.gitlab](./.env.gitlab), [.env.github](./.env.github) in this repository.
 
 ## Usage 
 
