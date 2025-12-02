@@ -2,6 +2,17 @@ document.addEventListener('show.bs.modal', (e) => {
     const desc = e.target.querySelector('#timesheet_edit_form_description');
     const activitySelect = e.target.querySelector('#timesheet_edit_form_activity');
 
+    //=========================================================================
+    // Configuration Autocomplete
+    const MIN_QUERY_LENGTH = 4; // min query length to trigger autocomplete
+
+    // Configuration Validation
+    const validatedActivities = ['exampleActivity', 'anotherActivity']; // Activities that require validation
+    const VALIDATION_PATTERN = /^(youtrack:|https:\/\/youtrack.example.com\/issues\/)[A-Z]+-[0-9]+(\n.*)*$/
+    const VALIDATION_MESSAGE = 'validateActivity needs format "youtrack:PROJEKT-123" or "https://youtrack.example.com/issues/PROJEKT-123"'
+
+    //=========================================================================
+
     if (desc !== null && activitySelect !== null) {
         desc.required = true;
         const label = e.target.querySelector('label[for=timesheet_edit_form_description]');
@@ -13,30 +24,6 @@ document.addEventListener('show.bs.modal', (e) => {
         const clientCache = new Map();
         const CACHE_DURATION_MS = 60000; // 60 seconds
         const MAX_CACHE_SIZE = 50; // Prevent memory issues
-
-        /**
-         * Get cache statistics for monitoring
-         */
-        function getCacheStats() {
-            const now = Date.now();
-            let activeEntries = 0;
-            let expiredEntries = 0;
-
-            clientCache.forEach((value) => {
-                if (now - value.timestamp < CACHE_DURATION_MS) {
-                    activeEntries++;
-                } else {
-                    expiredEntries++;
-                }
-            });
-
-            return {
-                totalEntries: clientCache.size,
-                activeEntries: activeEntries,
-                expiredEntries: expiredEntries,
-                maxSize: MAX_CACHE_SIZE
-            };
-        }
 
         /**
          * Clean up expired cache entries
@@ -73,7 +60,6 @@ document.addEventListener('show.bs.modal', (e) => {
 
         // Fetch autocomplete suggestions from API with client-side caching
         function fetchAutocompleteData(queryString) {
-            const startTime = performance.now();
             const cacheKey = queryString.toLowerCase().trim();
 
             // Check client-side cache first
@@ -81,9 +67,6 @@ document.addEventListener('show.bs.modal', (e) => {
             const now = Date.now();
 
             if (cached && (now - cached.timestamp < CACHE_DURATION_MS)) {
-                const cacheAge = Math.round((now - cached.timestamp) / 1000);
-                const fetchTime = performance.now() - startTime;
-
                 return Promise.resolve(cached.issueData);
             }
             // Fetch from API if not in cache
@@ -95,10 +78,7 @@ document.addEventListener('show.bs.modal', (e) => {
                     return response.json();
                 })
                 .then(apiResponse => {
-
                     const issueData = apiResponse.issueData || [];
-                    console.log('[AutoComplete] Data items received:', issueData.length);
-
 
                     // Store in client cache
                     clientCache.set(cacheKey, {
@@ -124,12 +104,26 @@ document.addEventListener('show.bs.modal', (e) => {
         let autocompleteList;
         let debounceTimer;
 
-        function closeAllLists(element) {
-            const items = document.getElementsByClassName("autocomplete-items");
-            for (let i = 0; i < items.length; i++) {
-                if (element != items[i] && element != desc) {
-                    items[i].parentNode.removeChild(items[i]);
-                }
+        // Create autocomplete container once
+        autocompleteList = document.createElement("div");
+        autocompleteList.setAttribute("id", "autocomplete-items");
+        autocompleteList.style.cssText = `
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-top: none;
+            z-index: 99;
+            background: white;
+            max-height: 200px;
+            min-width: 400px;
+            overflow-y: auto;
+            visibility: hidden;
+        `;
+        desc.parentNode.appendChild(autocompleteList);
+
+        function closeAllLists() {
+            if (autocompleteList.style.visibility === 'visible' && autocompleteList.innerHTML !== '') {
+                autocompleteList.style.visibility = 'hidden';
+                autocompleteList.innerHTML = '';
             }
         }
 
@@ -139,25 +133,16 @@ document.addEventListener('show.bs.modal', (e) => {
                 return;
             }
 
-            closeAllLists();
+            // Clear existing items and reset focus
+            autocompleteList.innerHTML = '';
             currentFocus = -1;
 
-            autocompleteList = document.createElement("div");
-            autocompleteList.setAttribute("class", "autocomplete-items");
-            autocompleteList.style.cssText = `
-                position: absolute;
-                border: 1px solid #d4d4d4;
-                border-top: none;
-                z-index: 99;
-                background: white;
-                max-height: 200px;
-                min-width: 400px;
-                overflow-y: auto;
-            `;
-            desc.parentNode.appendChild(autocompleteList);
+            // Show the autocomplete list
+            autocompleteList.style.visibility = 'visible';
 
             for (let i = 0; i < issueData.length; i++) {
                 const item = document.createElement("div");
+                item.setAttribute("class", "autocomplete-item");
                 item.style.cssText = `
                     padding: 10px;
                     cursor: pointer;
@@ -171,17 +156,12 @@ document.addEventListener('show.bs.modal', (e) => {
                 item.innerHTML += `<input type='hidden' issueData-key='${issueData[i].key}' issueData-value='${issueData[i].value}' issueData-issue-endpoint='${issueData[i].issueUrl}'>`;
 
                 item.addEventListener("click", function (e) {
-                    const input = this.getElementsByTagName("input")[0];
-
-                    const key = input.getAttribute('issueData-key');
-                    const value = input.getAttribute('issueData-value');
-
-                    const endpoint = input.getAttribute('issueData-issue-endpoint');
-
-
-                    desc.value = endpoint;
-                    closeAllLists();
-                    validateDescription();
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof e.stopImmediatePropagation === 'function') {
+                        e.stopImmediatePropagation();
+                    }
+                    selectItem(this);
                 });
 
                 item.addEventListener("mouseenter", function () {
@@ -196,15 +176,15 @@ document.addEventListener('show.bs.modal', (e) => {
             }
         }
 
-        // Autocomplete input event with debouncing and minimum 3 characters
+        // Autocomplete input event with debouncing and pattern matching
         desc.addEventListener("input", function () {
             const queryString = desc.value;
 
             // Clear existing timer
             clearTimeout(debounceTimer);
 
-            // Close autocomplete if less than 3 characters
-            if (!queryString || queryString.length < 3) {
+            // Close autocomplete if pattern doesn't match
+            if (!queryString || queryString.length < MIN_QUERY_LENGTH) {
                 closeAllLists();
                 validateDescription();
                 return;
@@ -222,7 +202,11 @@ document.addEventListener('show.bs.modal', (e) => {
 
         // Keyboard navigation for autocomplete
         desc.addEventListener("keydown", function (e) {
-            let items = autocompleteList ? autocompleteList.getElementsByTagName("div") : [];
+            if (autocompleteList.style.visibility !== 'visible') return;
+
+            const items = document.getElementsByClassName("autocomplete-item");
+            if (!items || items.length === 0) return;
+
             if (e.keyCode == 40) { // DOWN arrow
                 currentFocus++;
                 addActive(items);
@@ -231,11 +215,19 @@ document.addEventListener('show.bs.modal', (e) => {
                 addActive(items);
             } else if (e.keyCode == 13) { // ENTER
                 e.preventDefault();
-                if (currentFocus > -1 && items) {
-                    items[currentFocus].click();
+                if (currentFocus > -1 && items && items[currentFocus]) {
+                    selectItem(items[currentFocus]);
                 }
             }
         });
+
+        // Close autocomplete when clicking outside
+        document.addEventListener("click", function (e) {
+            if (e.target !== desc && !autocompleteList.contains(e.target)) {
+                closeAllLists();
+            }
+        });
+
 
         function addActive(items) {
             if (!items) return false;
@@ -251,34 +243,47 @@ document.addEventListener('show.bs.modal', (e) => {
             }
         }
 
-        document.addEventListener("click", function (e) {
-            closeAllLists(e.target);
-        });
+        // Apply selected item's endpoint to the description and close list
+        function selectItem(element) {
+            if (!element) { return; }
+            const input = element.getElementsByTagName("input")[0];
+            if (!input) { return; }
 
-        // Validation function - ONLY for exampleActivity
+            const endpoint = input.getAttribute('issueData-issue-endpoint');
+            if (endpoint) {
+                desc.value = endpoint;
+                closeAllLists();
+                validateDescription();
+            }
+        }
+
+
+        // Validation function
         function validateDescription() {
             // Change pattern as needed
-            const pattern = /^youtrack:[A-Z]+-[0-9]+$/;
+            const pattern = VALIDATION_PATTERN;
             const value = desc.value.trim();
 
-            let exampleActivity = false;
+            let validateActivity = false;
 
-            // Check if exampleActivity is selected
+            // Check if validateActivity is true
             if (activitySelect.tomselect) {
                 const selectedValue = activitySelect.tomselect.getValue();
                 const selectedOption = activitySelect.tomselect.options[selectedValue];
 
                 if (selectedOption) {
                     const optionText = selectedOption.text || selectedOption.name || '';
-                    exampleActivity = optionText.trim() === 'exampleActivity';
+                    validateActivity = validatedActivities.includes(optionText.trim());
                 }
             }
 
-            // Validation ONLY applies when 'exampleActivity' is selected
-            if (exampleActivity && value !== '' && !pattern.test(value)) {
-                desc.setCustomValidity('exampleActivity needs format "youtrack:PROJEKT-123"');
+            // Validation ONLY applies when validatedActivities includes selected Activity
+            if (validateActivity && value !== '' && !pattern.test(value)) {
+                desc.setCustomValidity(VALIDATION_MESSAGE);
                 desc.style.borderColor = 'red';
-                desc.reportValidity();
+                if (autocompleteList.style.visibility === 'hidden' && autocompleteList.innerHTML !== '') {
+                    desc.reportValidity();
+                }
             } else {
                 desc.setCustomValidity('');
                 desc.style.borderColor = '';
