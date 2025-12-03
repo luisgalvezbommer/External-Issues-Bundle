@@ -107,18 +107,17 @@ document.addEventListener('show.bs.modal', (e) => {
         // Create autocomplete container once
         autocompleteList = document.createElement("div");
         autocompleteList.setAttribute("id", "autocomplete-items");
+        
+        autocompleteList.setAttribute("class", "ts-dropdown single")
+        desc.parentNode.style.position = 'relative';
+        
+        desc.parentNode.appendChild(autocompleteList);
+
         autocompleteList.style.cssText = `
-            position: absolute;
-            border: 1px solid #d4d4d4;
-            border-top: none;
-            z-index: 99;
-            background: white;
             max-height: 200px;
             min-width: 400px;
             overflow-y: auto;
-            visibility: hidden;
         `;
-        desc.parentNode.appendChild(autocompleteList);
 
         function closeAllLists() {
             if (autocompleteList.style.visibility === 'visible' && autocompleteList.innerHTML !== '') {
@@ -165,11 +164,11 @@ document.addEventListener('show.bs.modal', (e) => {
                 });
 
                 item.addEventListener("mouseenter", function () {
-                    this.style.backgroundColor = "#e9e9e9";
+                    item.setAttribute("class", "active autocomplete-item")
                 });
 
                 item.addEventListener("mouseleave", function () {
-                    this.style.backgroundColor = "";
+                    item.setAttribute("class", "autocomplete-item")
                 });
 
                 autocompleteList.appendChild(item);
@@ -234,12 +233,12 @@ document.addEventListener('show.bs.modal', (e) => {
             removeActive(items);
             if (currentFocus >= items.length) currentFocus = 0;
             if (currentFocus < 0) currentFocus = (items.length - 1);
-            items[currentFocus].style.backgroundColor = "#e9e9e9";
+            items[currentFocus].setAttribute("class", "active autocomplete-item");
         }
 
         function removeActive(items) {
             for (let i = 0; i < items.length; i++) {
-                items[i].style.backgroundColor = "";
+                items[i].setAttribute("class", "autocomplete-item");
             }
         }
 
